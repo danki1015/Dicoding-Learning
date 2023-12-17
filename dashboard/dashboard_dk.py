@@ -4,15 +4,15 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import streamlit as st
 
-customer = pd.read_csv('customers_dataset.csv')
-orders = pd.read_csv('orders_dataset.csv')
-order_reviews = pd.read_csv('order_reviews_dataset.csv')
-payments = pd.read_csv('order_payments_dataset.csv')
-order_items = pd.read_csv('order_items_dataset.csv')
-products = pd.read_csv('products_dataset.csv')
-sellers = pd.read_csv('sellers_dataset.csv')
-geolocation = pd.read_csv('geolocation_dataset.csv')
-products_translation = pd.read_csv('product_category_name_translation.csv')
+customer = pd.read_csv('data/customers_dataset.csv')
+orders = pd.read_csv('data/orders_dataset.csv')
+order_reviews = pd.read_csv('data/order_reviews_dataset.csv')
+payments = pd.read_csv('data/order_payments_dataset.csv')
+order_items = pd.read_csv('data/order_items_dataset.csv')
+products = pd.read_csv('data/products_dataset.csv')
+sellers = pd.read_csv('data/sellers_dataset.csv')
+geolocation = pd.read_csv('data/geolocation_dataset.csv')
+products_translation = pd.read_csv('data/product_category_name_translation.csv')
 
 # menggabugkan product dengan products_translation
 products = products.merge(products_translation, left_on='product_category_name', right_on='product_category_name',how='left')
