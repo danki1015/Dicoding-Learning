@@ -115,9 +115,10 @@ st.pyplot(fig)
 st.subheader('Berapa lama rata-rata pengiriman paket pengiriman paket terlama ? dari mana ke mana?')
 
 df_pengiriman_state = cust_seller.groupby(['seller_state', 'customer_state'])['lama_pengiriman_hari'].mean().sort_values(ascending=False).reset_index()
-fig, ax = sns.cubehelix_palette(start=.5, rot=-.75, as_cmap=True)
+fig = plt.figure(figsize=(10, 5))
+cmap= sns.cubehelix_palette(start=.5, rot=-.75, as_cmap=True)
 
-plt.scatter(df_pengiriman_state['seller_state'], df_pengiriman_state['customer_state'], c=df_pengiriman_state['lama_pengiriman_hari'], cmap=ax, s=100)
+plt.scatter(df_pengiriman_state['seller_state'], df_pengiriman_state['customer_state'], c=df_pengiriman_state['lama_pengiriman_hari'], cmap=cmap, s=100)
 plt.xlabel('State Penjual')
 plt.ylabel('State Pembeli')
 
@@ -130,7 +131,7 @@ st.pyplot(fig)
 st.subheader('Berapa rata-rata payment value dari tiap tipe transaksi? dan transaksi tipe apa yang paling sering digunakan?')
 
 df_payment = orders.groupby(by="payment_type")["payment_value"].mean().reset_index()
-fig, ax= plt.figure(figsize=(10, 5))
+fig= plt.figure(figsize=(10, 5))
 
 colors = ["#800000", "#D3D3D3", "#D3D3D3", "#D3D3D3"]
 
