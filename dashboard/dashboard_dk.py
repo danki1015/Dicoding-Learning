@@ -175,22 +175,22 @@ month_names = {
 }
 df_tanggal_penjualan['nama_bulan'] = df_tanggal_penjualan['nomor_bulan'].map(month_names)
 
-fig = plt.figure(figsize=(10, 5))
-
+# Create a bar plot using seaborn
+plt.figure(figsize=(10, 5))
 custom_palette = ["#FFC0CB", "#800000"]  
-sns.catplot(
+sns.barplot(
     x='nama_bulan',
     y='order_id',
     hue='year',
     data=df_tanggal_penjualan,
-    kind='bar',
-    height=6,
-    aspect=2,
-    palette = custom_palette)
-plt.ylabel("total order")
+    palette=custom_palette
+)
+
+plt.ylabel("Total Order")
 plt.xlabel(None)
 
-st.pyplot(fig)
+# Show the plot in Streamlit
+st.pyplot(plt)
 
 #Pertanyaan 5: 
 st.subheader('Bulan apa yang terjadi peningkatan penjualan tertinggi?')
