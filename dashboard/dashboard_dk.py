@@ -18,9 +18,7 @@ products_translation = pd.read_csv('data/product_category_name_translation.csv')
 products = products.merge(products_translation, left_on='product_category_name', right_on='product_category_name',how='left')
 
 df_product = products[["product_id","product_category_name_english","product_category_name"]]
-print(df_product.shape)
-# df_product.head()
-df_product.loc[df_product["product_category_name_english"].isnull()]
+
 
 # menggabugkan order_items dengan df_products menjadi df_order_items
 df_order_items = order_items.merge(products, left_on='product_id', right_on='product_id',how='left')
@@ -59,7 +57,6 @@ orders['order_delivered_customer_date'] = pd.to_datetime(orders['order_delivered
 orders['order_estimated_delivery_date'] = pd.to_datetime(orders['order_estimated_delivery_date'])
 orders['order_status'] = orders['order_status'].astype('category')
 
-orders.info()
 
 # menambahkan kolom untuk EDA
 orders['year'] = orders['order_purchase_timestamp'].dt.strftime('%Y')
@@ -73,6 +70,7 @@ orders['jam_pembelian'] = orders['order_purchase_timestamp'].apply(lambda x: x.h
 hours_bins = [-0.1, 6, 12, 18, 23]
 hours_labels = ['Subuh', 'Pagi', 'Siang', 'Malam']
 orders['waktu_hari_pembelian'] = pd.cut(orders['jam_pembelian'], hours_bins, labels=hours_labels)
+cust_seller.groupby(['seller_city', 'customer_city'])['lama_pengiriman_hari'].median().sort_values(ascending=False).reset_index()
 
 # mendefinisikan fungsi yang akan digunakan untuk EDA
 def range(series):
