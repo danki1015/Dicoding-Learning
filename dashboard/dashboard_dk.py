@@ -70,7 +70,11 @@ orders['jam_pembelian'] = orders['order_purchase_timestamp'].apply(lambda x: x.h
 hours_bins = [-0.1, 6, 12, 18, 23]
 hours_labels = ['Subuh', 'Pagi', 'Siang', 'Malam']
 orders['waktu_hari_pembelian'] = pd.cut(orders['jam_pembelian'], hours_bins, labels=hours_labels)
-cust_seller.groupby(['seller_city', 'customer_city'])['lama_pengiriman_hari'].median().sort_values(ascending=False).reset_index()
+
+# menggabungkan customer dengan seller
+cust = orders[["customer_city","customer_state","lama_pengiriman_hari","order_id","customer_id"]]
+seller = df_order_items[["order_id","seller_id","seller_city","seller_state"]]
+cust_seller = cust.merge(seller, left_on='order_id', right_on='order_id',how='left')
 
 # mendefinisikan fungsi yang akan digunakan untuk EDA
 def range(series):
