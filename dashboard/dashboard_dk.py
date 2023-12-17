@@ -3,6 +3,7 @@ import pandas as pd
 import os
 import matplotlib.pyplot as plt
 import seaborn as sns
+import streamlit as st
 
 customer = pd.read_csv('customers_dataset.csv')
 orders = pd.read_csv('orders_dataset.csv')
@@ -77,6 +78,8 @@ orders['waktu_hari_pembelian'] = pd.cut(orders['jam_pembelian'], hours_bins, lab
 # mendefinisikan fungsi yang akan digunakan untuk EDA
 def range(series):
     return series.max() - series.min()
+
+st.text('Dashboard Proyek Analisa')
 
 #Pertanyaan 1: Category barang yang paling banyak dibeli dan paling sedikit diminati?
 df_category = df_order_items.groupby(by="product_category_name_english")["product_id"].count().reset_index() #jumlah pembelian
