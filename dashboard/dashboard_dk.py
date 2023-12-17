@@ -83,7 +83,9 @@ def range(series):
 
 st.text('Dashboard Proyek Analisa')
 
-#Pertanyaan 1: Category barang yang paling banyak dibeli dan paling sedikit diminati?
+#Pertanyaan 1
+st.subheader('Pertanyaan 1: Category barang yang paling banyak dibeli dan paling sedikit diminati?')
+
 df_category = df_order_items.groupby(by="product_category_name_english")["product_id"].count().reset_index() #jumlah pembelian
 df_category = df_category.rename(columns={"product_category_name_english": "category", "product_id": "orders"})
 fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(24, 6))
@@ -106,25 +108,29 @@ ax[1].set_title("Category Sedikit Peminat", loc="center", fontsize=15)
 ax[1].tick_params(axis='y', labelsize=12)
  
 plt.suptitle("Category Terlaris dan Sedikit Peminat berdasarkan Total Pembelian", fontsize=20)
-plt.show()
+
 st.pyplot(fig)
 
-#Pertanyaan 2: Berapa lama rata-rata pengiriman paket pengiriman paket terlama ? dari mana ke mana?¶
-df_pengiriman_state = cust_seller.groupby(['seller_state', 'customer_state'])['lama_pengiriman_hari'].mean().sort_values(ascending=False).reset_index()
-cmap = sns.cubehelix_palette(start=.5, rot=-.75, as_cmap=True)
+#Pertanyaan 2: 
+st.subheader('Berapa lama rata-rata pengiriman paket pengiriman paket terlama ? dari mana ke mana?')
 
-plt.scatter(df_pengiriman_state['seller_state'], df_pengiriman_state['customer_state'], c=df_pengiriman_state['lama_pengiriman_hari'], cmap=cmap, s=100)
+df_pengiriman_state = cust_seller.groupby(['seller_state', 'customer_state'])['lama_pengiriman_hari'].mean().sort_values(ascending=False).reset_index()
+fig, ax = sns.cubehelix_palette(start=.5, rot=-.75, as_cmap=True)
+
+plt.scatter(df_pengiriman_state['seller_state'], df_pengiriman_state['customer_state'], c=df_pengiriman_state['lama_pengiriman_hari'], cmap=ax, s=100)
 plt.xlabel('State Penjual')
 plt.ylabel('State Pembeli')
 
 plt.colorbar(label='Lama Pengiriman (Hari)')
 plt.show()
+
 st.pyplot(fig)
 
-#Pertanyaan 3: Berapa rata-rata payment value dari tiap tipe transaksi? dan transaksi tipe apa yang paling sering digunakan?¶
+#Pertanyaan 3
+st.subheader('Berapa rata-rata payment value dari tiap tipe transaksi? dan transaksi tipe apa yang paling sering digunakan?')
 
 df_payment = orders.groupby(by="payment_type")["payment_value"].mean().reset_index()
-plt.figure(figsize=(10, 5))
+fig, ax= plt.figure(figsize=(10, 5))
 
 colors = ["#800000", "#D3D3D3", "#D3D3D3", "#D3D3D3"]
 
@@ -147,7 +153,8 @@ palette_color = sns.color_palette('Reds')
 plt.pie(df_payment["order_id"], labels=df_payment["payment_type"], colors=palette_color, autopct='%.0f%%')
 plt.title("Payment Type Distribution")
 
-#Pertanyaan 4: Bagaimana perbandingan penjualan tahun 2017 dan 2018?
+#Pertanyaan 4: 
+st.subheader('Bagaimana perbandingan penjualan tahun 2017 dan 2018?')
 
 orders['nomor_bulan'] = orders['order_purchase_timestamp'].dt.strftime('%m')
 df_tanggal_penjualan = orders.groupby(by=["nomor_bulan","year"]).order_id.nunique().reset_index()
@@ -165,16 +172,21 @@ month_names = {
     8: 'Aug'
 }
 df_tanggal_penjualan['nama_bulan'] = df_tanggal_penjualan['nomor_bulan'].map(month_names)
+fig = plt.figure(figsize=(20, 6))
 custom_palette = ["#FFC0CB", "#800000"]  
 sns.catplot(x='nama_bulan', y='order_id', hue='year', data=df_tanggal_penjualan, kind='bar', height=6, aspect=2, palette = custom_palette)
 plt.ylabel("total order")
 plt.xlabel(None)
 
-#Pertanyaan 5: Bulan apa yang terjadi peningkatan penjualan tertinggi?
+st.pyplot(fig)
+
+#Pertanyaan 5: 
+st.subheader('Bulan apa yang terjadi peningkatan penjualan tertinggi?')
+
 df_tanggal =  orders.groupby(by=["month","year"]).order_id.nunique().reset_index()
 df_tanggal["month"] = pd.to_datetime(df_tanggal["month"], format='%m-%Y')
 
-plt.figure(figsize=(20, 6))
+fig = plt.figure(figsize=(20, 6))
 
 ax = sns.lineplot(x='month', y='order_id', data=df_tanggal, estimator=None,linewidth=3)
 ax.set(xticks=df_tanggal.month.values)
@@ -186,14 +198,16 @@ ax.grid(False)
 for tick in ax.get_xticklabels():
     tick.set_rotation(45)
     
+st.pyplot(fig)
     
-#Pertanyaan 6: hari apa yang sering digunakan oleh pembeli untuk melakukan transaksi?
+#Pertanyaan 6: 
+st.subheader('Hari apa yang sering digunakan oleh pembeli untuk melakukan transaksi?')
 df_bagian_hari = orders.groupby(by="waktu_hari_pembelian")["order_id"].nunique().reset_index()
 df_bagian_hari.rename(columns={
     "order_id": "total_orders"
 }, inplace=True)
 
-plt.figure(figsize=(10, 5))
+fig = plt.figure(figsize=(10, 5))
 
 colors = ["#D3D3D3", "#D3D3D3", "#800000", "#D3D3D3"]
 
@@ -207,13 +221,14 @@ plt.title("persebaran pembelian berdasarkan bagian hari", loc="center", fontsize
 plt.ylabel("total order")
 plt.xlabel(None)
 plt.tick_params(axis='x', labelsize=12)
-plt.show()
+st.pyplot(fig)
 
 df_hari = orders.groupby(by="hari_pembelian").order_id.nunique().sort_values(ascending=False).reset_index()
 df_hari.rename(columns={
     "order_id": "total_orders"
 }, inplace=True)
-plt.figure(figsize=(10, 5))
+
+fig=plt.figure(figsize=(10, 5))
 
 colors = ["#D3D3D3", "#D3D3D3","#D3D3D3", "#D3D3D3","#D3D3D3", "#D3D3D3", "#800000"]
 
@@ -227,4 +242,4 @@ plt.title("persebaran pembelian berdasarkan hari", loc="center", fontsize=15)
 plt.ylabel("total order")
 plt.xlabel(None)
 plt.tick_params(axis='x', labelsize=12)
-plt.show()
+st.pyplot(fig)
