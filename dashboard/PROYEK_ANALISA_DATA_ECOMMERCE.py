@@ -18,7 +18,7 @@
     "papermill": {
      "duration": 0.022137,
      "end_time": "2023-10-18T10:08:14.685290",
-     "exception": false,
+     "exception": False,
      "start_time": "2023-10-18T10:08:14.663153",
      "status": "completed"
     },
