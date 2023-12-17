@@ -107,6 +107,7 @@ ax[1].tick_params(axis='y', labelsize=12)
  
 plt.suptitle("Category Terlaris dan Sedikit Peminat berdasarkan Total Pembelian", fontsize=20)
 plt.show()
+st.pyplot(fig)
 
 #Pertanyaan 2: Berapa lama rata-rata pengiriman paket pengiriman paket terlama ? dari mana ke mana?¶
 df_pengiriman_state = cust_seller.groupby(['seller_state', 'customer_state'])['lama_pengiriman_hari'].mean().sort_values(ascending=False).reset_index()
@@ -118,6 +119,7 @@ plt.ylabel('State Pembeli')
 
 plt.colorbar(label='Lama Pengiriman (Hari)')
 plt.show()
+st.pyplot(fig)
 
 #Pertanyaan 3: Berapa rata-rata payment value dari tiap tipe transaksi? dan transaksi tipe apa yang paling sering digunakan?¶
 
@@ -137,6 +139,7 @@ plt.ylabel("nilai transaksi")
 plt.xlabel(None)
 plt.tick_params(axis='x', labelsize=12)
 plt.show()
+st.pyplot(fig)
 
 df_payment = orders.groupby(by="payment_type")["order_id"].nunique().reset_index()
 palette_color = sns.color_palette('Reds') 
