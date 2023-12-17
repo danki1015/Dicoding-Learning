@@ -175,10 +175,18 @@ month_names = {
 }
 df_tanggal_penjualan['nama_bulan'] = df_tanggal_penjualan['nomor_bulan'].map(month_names)
 
-fig = plt.figure(figsize=(20, 6))
+fig = plt.figure(figsize=(10, 5))
 
 custom_palette = ["#FFC0CB", "#800000"]  
-sns.catplot(x='nama_bulan', y='order_id', hue='year', data=df_tanggal_penjualan, kind='bar', height=6, aspect=2, palette = custom_palette)
+sns.catplot(
+    x='nama_bulan',
+    y='order_id',
+    hue='year',
+    data=df_tanggal_penjualan,
+    kind='bar',
+    height=6,
+    aspect=2,
+    palette = custom_palette)
 plt.ylabel("total order")
 plt.xlabel(None)
 
