@@ -1,256 +1,222 @@
-{
- "cells": [
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "8fc1c665",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "import numpy as np \n",
-    "import pandas as pd \n",
-    "import os\n",
-    "import matplotlib.pyplot as plt\n",
-    "import seaborn as sns\n",
-    "\n",
-    "customer = pd.read_csv('customers_dataset.csv')\n",
-    "orders = pd.read_csv('orders_dataset.csv')\n",
-    "order_reviews = pd.read_csv('order_reviews_dataset.csv')\n",
-    "payments = pd.read_csv('order_payments_dataset.csv')\n",
-    "order_items = pd.read_csv('order_items_dataset.csv')\n",
-    "products = pd.read_csv('products_dataset.csv')\n",
-    "sellers = pd.read_csv('sellers_dataset.csv')\n",
-    "geolocation = pd.read_csv('geolocation_dataset.csv')\n",
-    "products_translation = pd.read_csv('product_category_name_translation.csv')\n",
-    "\n",
-    "# menggabugkan product dengan products_translation\n",
-    "products = products.merge(products_translation, left_on='product_category_name', right_on='product_category_name',how='left')\n",
-    "\n",
-    "df_product = products[[\"product_id\",\"product_category_name_english\",\"product_category_name\"]]\n",
-    "print(df_product.shape)\n",
-    "# df_product.head()\n",
-    "df_product.loc[df_product[\"product_category_name_english\"].isnull()]\n",
-    "\n",
-    "# menggabugkan order_items dengan df_products menjadi df_order_items\n",
-    "df_order_items = order_items.merge(products, left_on='product_id', right_on='product_id',how='left')\n",
-    "\n",
-    "# menggabungkan df_order_items dengan seller\n",
-    "sellers = sellers.drop(columns = ['seller_zip_code_prefix'])\n",
-    "df_order_items = df_order_items.merge(sellers, left_on='seller_id', right_on='seller_id',how='left')\n",
-    "\n",
-    "# menggabungkan orders dengan payments\n",
-    "payments = payments.drop(columns = ['payment_sequential','payment_installments'])\n",
-    "orders = orders.merge(payments, left_on='order_id', right_on='order_id',how='left')\n",
-    "\n",
-    "# menggabungkan orders dengan customers\n",
-    "customer = customer.drop(columns = ['customer_unique_id'])\n",
-    "orders = orders.merge(customer, left_on='customer_id', right_on='customer_id',how='left')\n",
-    "\n",
-    "#data types\n",
-    "df_order_items['shipping_limit_date'] = pd.to_datetime(df_order_items['shipping_limit_date'])\n",
-    "\n",
-    "# missing value pada kolom product_category_name_english\n",
-    "x = df_order_items.loc[df_order_items[\"product_category_name\"].notnull() & df_order_items[\"product_category_name_english\"].isnull()]\n",
-    "set(x[\"product_category_name\"])\n",
-    "\n",
-    "df_order_items['product_category_name'].fillna('not defined', inplace=True)\n",
-    "df_order_items['product_category_name_english'].fillna('not defined', inplace=True)\n",
-    "\n",
-    "df_order_items[\"product_category_name_english\"] = np.where(df_order_items[\"product_category_name\"] == 'pc_gamer', 'PC Gaming', df_order_items[\"product_category_name_english\"])\n",
-    "df_order_items[\"product_category_name_english\"] = np.where(df_order_items[\"product_category_name\"] == 'portateis_cozinha_e_preparadores_de_alimentos', 'portable kitchen food preparers', df_order_items[\"product_category_name_english\"])\n",
-    "\n",
-    "\n",
-    "# membenarkan data types \n",
-    "orders['order_purchase_timestamp'] = pd.to_datetime(orders['order_purchase_timestamp'])\n",
-    "orders['order_approved_at'] = pd.to_datetime(orders['order_approved_at'])\n",
-    "orders['order_delivered_carrier_date'] = pd.to_datetime(orders['order_delivered_carrier_date'])\n",
-    "orders['order_delivered_customer_date'] = pd.to_datetime(orders['order_delivered_customer_date'])\n",
-    "orders['order_estimated_delivery_date'] = pd.to_datetime(orders['order_estimated_delivery_date'])\n",
-    "orders['order_status'] = orders['order_status'].astype('category')\n",
-    "\n",
-    "orders.info()\n",
-    "\n",
-    "# menambahkan kolom untuk EDA\n",
-    "orders['year'] = orders['order_purchase_timestamp'].dt.strftime('%Y')\n",
-    "orders['month'] = orders['order_purchase_timestamp'].dt.strftime('%m-%Y')\n",
-    "# df_order_items\n",
-    "\n",
-    "orders[\"lama_pengiriman_hari\"] = (orders[\"order_delivered_customer_date\"] - orders[\"order_delivered_carrier_date\"]).dt.days\n",
-    "orders[\"hari_pembelian\"] = orders[\"order_purchase_timestamp\"].dt.strftime('%A')\n",
-    "\n",
-    "orders['jam_pembelian'] = orders['order_purchase_timestamp'].apply(lambda x: x.hour)\n",
-    "hours_bins = [-0.1, 6, 12, 18, 23]\n",
-    "hours_labels = ['Subuh', 'Pagi', 'Siang', 'Malam']\n",
-    "orders['waktu_hari_pembelian'] = pd.cut(orders['jam_pembelian'], hours_bins, labels=hours_labels)\n",
-    "\n",
-    "# mendefinisikan fungsi yang akan digunakan untuk EDA\n",
-    "def range(series):\n",
-    "    return series.max() - series.min()\n",
-    "\n",
-    "#Pertanyaan 1: Category barang yang paling banyak dibeli dan paling sedikit diminati?\n",
-    "df_category = df_order_items.groupby(by=\"product_category_name_english\")[\"product_id\"].count().reset_index() #jumlah pembelian\n",
-    "df_category = df_category.rename(columns={\"product_category_name_english\": \"category\", \"product_id\": \"orders\"})\n",
-    "fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(24, 6))\n",
-    " \n",
-    "colors = [\"#800000\", \"#D3D3D3\", \"#D3D3D3\", \"#D3D3D3\", \"#D3D3D3\"]\n",
-    " \n",
-    "sns.barplot(x=\"orders\", y=\"category\", data=df_category.sort_values(by=\"orders\", ascending=False).head(5), palette=colors, ax=ax[0])\n",
-    "ax[0].set_ylabel(None)\n",
-    "ax[0].set_xlabel(None)\n",
-    "ax[0].set_title(\"Category Terlaris\", loc=\"center\", fontsize=15)\n",
-    "ax[0].tick_params(axis ='y', labelsize=12)\n",
-    " \n",
-    "sns.barplot(x=\"orders\", y=\"category\", data=df_category.sort_values(by=\"orders\", ascending=True).head(5), palette=colors, ax=ax[1])\n",
-    "ax[1].set_ylabel(None)\n",
-    "ax[1].set_xlabel(None)\n",
-    "ax[1].invert_xaxis()\n",
-    "ax[1].yaxis.set_label_position(\"right\")\n",
-    "ax[1].yaxis.tick_right()\n",
-    "ax[1].set_title(\"Category Sedikit Peminat\", loc=\"center\", fontsize=15)\n",
-    "ax[1].tick_params(axis='y', labelsize=12)\n",
-    " \n",
-    "plt.suptitle(\"Category Terlaris dan Sedikit Peminat berdasarkan Total Pembelian\", fontsize=20)\n",
-    "plt.show()\n",
-    "\n",
-    "#Pertanyaan 2: Berapa lama rata-rata pengiriman paket pengiriman paket terlama ? dari mana ke mana?¶\n",
-    "df_pengiriman_state = cust_seller.groupby(['seller_state', 'customer_state'])['lama_pengiriman_hari'].mean().sort_values(ascending=False).reset_index()\n",
-    "cmap = sns.cubehelix_palette(start=.5, rot=-.75, as_cmap=True)\n",
-    "\n",
-    "plt.scatter(df_pengiriman_state['seller_state'], df_pengiriman_state['customer_state'], c=df_pengiriman_state['lama_pengiriman_hari'], cmap=cmap, s=100)\n",
-    "plt.xlabel('State Penjual')\n",
-    "plt.ylabel('State Pembeli')\n",
-    "\n",
-    "plt.colorbar(label='Lama Pengiriman (Hari)')\n",
-    "plt.show()\n",
-    "\n",
-    "#Pertanyaan 3: Berapa rata-rata payment value dari tiap tipe transaksi? dan transaksi tipe apa yang paling sering digunakan?¶\n",
-    "\n",
-    "df_payment = orders.groupby(by=\"payment_type\")[\"payment_value\"].mean().reset_index()\n",
-    "plt.figure(figsize=(10, 5))\n",
-    "\n",
-    "colors = [\"#800000\", \"#D3D3D3\", \"#D3D3D3\", \"#D3D3D3\"]\n",
-    "\n",
-    "sns.barplot( \n",
-    "    x=\"payment_type\",\n",
-    "    y=\"payment_value\",\n",
-    "    data=df_payment.sort_values(by=\"payment_value\", ascending = False),\n",
-    "    palette=colors\n",
-    ")\n",
-    "plt.title(\"persebaran pembelian berdasarkan bagian hari\", loc=\"center\", fontsize=15)\n",
-    "plt.ylabel(\"nilai transaksi\")\n",
-    "plt.xlabel(None)\n",
-    "plt.tick_params(axis='x', labelsize=12)\n",
-    "plt.show()\n",
-    "\n",
-    "df_payment = orders.groupby(by=\"payment_type\")[\"order_id\"].nunique().reset_index()\n",
-    "palette_color = sns.color_palette('Reds') \n",
-    "\n",
-    "plt.pie(df_payment[\"order_id\"], labels=df_payment[\"payment_type\"], colors=palette_color, autopct='%.0f%%')\n",
-    "plt.title(\"Payment Type Distribution\")\n",
-    "\n",
-    "#Pertanyaan 4: Bagaimana perbandingan penjualan tahun 2017 dan 2018?\n",
-    "\n",
-    "orders['nomor_bulan'] = orders['order_purchase_timestamp'].dt.strftime('%m')\n",
-    "df_tanggal_penjualan = orders.groupby(by=[\"nomor_bulan\",\"year\"]).order_id.nunique().reset_index()\n",
-    "df_tanggal_penjualan[\"nomor_bulan\"] = df_tanggal_penjualan[\"nomor_bulan\"].astype(str).astype(int)\n",
-    "df_tanggal_penjualan = df_tanggal_penjualan[df_tanggal_penjualan[\"nomor_bulan\"] < 9]\n",
-    "\n",
-    "month_names = {\n",
-    "    1: 'Jan',\n",
-    "    2: 'Feb',\n",
-    "    3: 'Mar',\n",
-    "    4: 'Apr',\n",
-    "    5: 'Mei',\n",
-    "    6: 'Jun',\n",
-    "    7: 'Jul',\n",
-    "    8: 'Aug'\n",
-    "}\n",
-    "df_tanggal_penjualan['nama_bulan'] = df_tanggal_penjualan['nomor_bulan'].map(month_names)\n",
-    "custom_palette = [\"#FFC0CB\", \"#800000\"]  \n",
-    "sns.catplot(x='nama_bulan', y='order_id', hue='year', data=df_tanggal_penjualan, kind='bar', height=6, aspect=2, palette = custom_palette)\n",
-    "plt.ylabel(\"total order\")\n",
-    "plt.xlabel(None)\n",
-    "\n",
-    "#Pertanyaan 5: Bulan apa yang terjadi peningkatan penjualan tertinggi?\n",
-    "df_tanggal =  orders.groupby(by=[\"month\",\"year\"]).order_id.nunique().reset_index()\n",
-    "df_tanggal[\"month\"] = pd.to_datetime(df_tanggal[\"month\"], format='%m-%Y')\n",
-    "\n",
-    "plt.figure(figsize=(20, 6))\n",
-    "\n",
-    "ax = sns.lineplot(x='month', y='order_id', data=df_tanggal, estimator=None,linewidth=3)\n",
-    "ax.set(xticks=df_tanggal.month.values)\n",
-    "\n",
-    "plt.title(\"Tren Pertumbuhan Penjualan\", loc=\"center\", fontsize=18)\n",
-    "plt.ylabel(\"total order\")\n",
-    "plt.xlabel(None)\n",
-    "ax.grid(False)\n",
-    "for tick in ax.get_xticklabels():\n",
-    "    tick.set_rotation(45)\n",
-    "    \n",
-    "    \n",
-    "#Pertanyaan 6: hari apa yang sering digunakan oleh pembeli untuk melakukan transaksi?\n",
-    "df_bagian_hari = orders.groupby(by=\"waktu_hari_pembelian\")[\"order_id\"].nunique().reset_index()\n",
-    "df_bagian_hari.rename(columns={\n",
-    "    \"order_id\": \"total_orders\"\n",
-    "}, inplace=True)\n",
-    "\n",
-    "plt.figure(figsize=(10, 5))\n",
-    "\n",
-    "colors = [\"#D3D3D3\", \"#D3D3D3\", \"#800000\", \"#D3D3D3\"]\n",
-    "\n",
-    "sns.barplot( \n",
-    "    x=\"waktu_hari_pembelian\",\n",
-    "    y=\"total_orders\",\n",
-    "    data=df_bagian_hari.sort_values(by=\"total_orders\"),\n",
-    "    palette=colors\n",
-    ")\n",
-    "plt.title(\"persebaran pembelian berdasarkan bagian hari\", loc=\"center\", fontsize=15)\n",
-    "plt.ylabel(\"total order\")\n",
-    "plt.xlabel(None)\n",
-    "plt.tick_params(axis='x', labelsize=12)\n",
-    "plt.show()\n",
-    "\n",
-    "df_hari = orders.groupby(by=\"hari_pembelian\").order_id.nunique().sort_values(ascending=False).reset_index()\n",
-    "df_hari.rename(columns={\n",
-    "    \"order_id\": \"total_orders\"\n",
-    "}, inplace=True)\n",
-    "plt.figure(figsize=(10, 5))\n",
-    "\n",
-    "colors = [\"#D3D3D3\", \"#D3D3D3\",\"#D3D3D3\", \"#D3D3D3\",\"#D3D3D3\", \"#D3D3D3\", \"#800000\"]\n",
-    "\n",
-    "sns.barplot( \n",
-    "    x=\"hari_pembelian\",\n",
-    "    y=\"total_orders\",\n",
-    "    data=df_hari.sort_values(by=\"total_orders\"),\n",
-    "    palette=colors\n",
-    ")\n",
-    "plt.title(\"persebaran pembelian berdasarkan hari\", loc=\"center\", fontsize=15)\n",
-    "plt.ylabel(\"total order\")\n",
-    "plt.xlabel(None)\n",
-    "plt.tick_params(axis='x', labelsize=12)\n",
-    "plt.show()"
-   ]
-  }
- ],
- "metadata": {
-  "kernelspec": {
-   "display_name": "Python 3 (ipykernel)",
-   "language": "python",
-   "name": "python3"
-  },
-  "language_info": {
-   "codemirror_mode": {
-    "name": "ipython",
-    "version": 3
-   },
-   "file_extension": ".py",
-   "mimetype": "text/x-python",
-   "name": "python",
-   "nbconvert_exporter": "python",
-   "pygments_lexer": "ipython3",
-   "version": "3.9.13"
-  }
- },
- "nbformat": 4,
- "nbformat_minor": 5
+import numpy as np 
+import pandas as pd 
+import os
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+customer = pd.read_csv('customers_dataset.csv')
+orders = pd.read_csv('orders_dataset.csv')
+order_reviews = pd.read_csv('order_reviews_dataset.csv')
+payments = pd.read_csv('order_payments_dataset.csv')
+order_items = pd.read_csv('order_items_dataset.csv')
+products = pd.read_csv('products_dataset.csv')
+sellers = pd.read_csv('sellers_dataset.csv')
+geolocation = pd.read_csv('geolocation_dataset.csv')
+products_translation = pd.read_csv('product_category_name_translation.csv')
+
+# menggabugkan product dengan products_translation
+products = products.merge(products_translation, left_on='product_category_name', right_on='product_category_name',how='left')
+
+df_product = products[["product_id","product_category_name_english","product_category_name"]]
+print(df_product.shape)
+# df_product.head()
+df_product.loc[df_product["product_category_name_english"].isnull()]
+
+# menggabugkan order_items dengan df_products menjadi df_order_items
+df_order_items = order_items.merge(products, left_on='product_id', right_on='product_id',how='left')
+
+# menggabungkan df_order_items dengan seller
+sellers = sellers.drop(columns = ['seller_zip_code_prefix'])
+df_order_items = df_order_items.merge(sellers, left_on='seller_id', right_on='seller_id',how='left')
+
+# menggabungkan orders dengan payments
+payments = payments.drop(columns = ['payment_sequential','payment_installments'])
+orders = orders.merge(payments, left_on='order_id', right_on='order_id',how='left')
+
+# menggabungkan orders dengan customers
+customer = customer.drop(columns = ['customer_unique_id'])
+orders = orders.merge(customer, left_on='customer_id', right_on='customer_id',how='left')
+
+#data types
+df_order_items['shipping_limit_date'] = pd.to_datetime(df_order_items['shipping_limit_date'])
+
+# missing value pada kolom product_category_name_english
+x = df_order_items.loc[df_order_items["product_category_name"].notnull() & df_order_items["product_category_name_english"].isnull()]
+set(x["product_category_name"])
+
+df_order_items['product_category_name'].fillna('not defined', inplace=True)
+df_order_items['product_category_name_english'].fillna('not defined', inplace=True)
+
+df_order_items["product_category_name_english"] = np.where(df_order_items["product_category_name"] == 'pc_gamer', 'PC Gaming', df_order_items["product_category_name_english"])
+df_order_items["product_category_name_english"] = np.where(df_order_items["product_category_name"] == 'portateis_cozinha_e_preparadores_de_alimentos', 'portable kitchen food preparers', df_order_items["product_category_name_english"])
+
+
+# membenarkan data types 
+orders['order_purchase_timestamp'] = pd.to_datetime(orders['order_purchase_timestamp'])
+orders['order_approved_at'] = pd.to_datetime(orders['order_approved_at'])
+orders['order_delivered_carrier_date'] = pd.to_datetime(orders['order_delivered_carrier_date'])
+orders['order_delivered_customer_date'] = pd.to_datetime(orders['order_delivered_customer_date'])
+orders['order_estimated_delivery_date'] = pd.to_datetime(orders['order_estimated_delivery_date'])
+orders['order_status'] = orders['order_status'].astype('category')
+
+orders.info()
+
+# menambahkan kolom untuk EDA
+orders['year'] = orders['order_purchase_timestamp'].dt.strftime('%Y')
+orders['month'] = orders['order_purchase_timestamp'].dt.strftime('%m-%Y')
+# df_order_items
+
+orders["lama_pengiriman_hari"] = (orders["order_delivered_customer_date"] - orders["order_delivered_carrier_date"]).dt.days
+orders["hari_pembelian"] = orders["order_purchase_timestamp"].dt.strftime('%A')
+
+orders['jam_pembelian'] = orders['order_purchase_timestamp'].apply(lambda x: x.hour)
+hours_bins = [-0.1, 6, 12, 18, 23]
+hours_labels = ['Subuh', 'Pagi', 'Siang', 'Malam']
+orders['waktu_hari_pembelian'] = pd.cut(orders['jam_pembelian'], hours_bins, labels=hours_labels)
+
+# mendefinisikan fungsi yang akan digunakan untuk EDA
+def range(series):
+    return series.max() - series.min()
+
+#Pertanyaan 1: Category barang yang paling banyak dibeli dan paling sedikit diminati?
+df_category = df_order_items.groupby(by="product_category_name_english")["product_id"].count().reset_index() #jumlah pembelian
+df_category = df_category.rename(columns={"product_category_name_english": "category", "product_id": "orders"})
+fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(24, 6))
+ 
+colors = ["#800000", "#D3D3D3", "#D3D3D3", "#D3D3D3", "#D3D3D3"]
+ 
+sns.barplot(x="orders", y="category", data=df_category.sort_values(by="orders", ascending=False).head(5), palette=colors, ax=ax[0])
+ax[0].set_ylabel(None)
+ax[0].set_xlabel(None)
+ax[0].set_title("Category Terlaris", loc="center", fontsize=15)
+ax[0].tick_params(axis ='y', labelsize=12)
+ 
+sns.barplot(x="orders", y="category", data=df_category.sort_values(by="orders", ascending=True).head(5), palette=colors, ax=ax[1])
+ax[1].set_ylabel(None)
+ax[1].set_xlabel(None)
+ax[1].invert_xaxis()
+ax[1].yaxis.set_label_position("right")
+ax[1].yaxis.tick_right()
+ax[1].set_title("Category Sedikit Peminat", loc="center", fontsize=15)
+ax[1].tick_params(axis='y', labelsize=12)
+ 
+plt.suptitle("Category Terlaris dan Sedikit Peminat berdasarkan Total Pembelian", fontsize=20)
+plt.show()
+
+#Pertanyaan 2: Berapa lama rata-rata pengiriman paket pengiriman paket terlama ? dari mana ke mana?¶
+df_pengiriman_state = cust_seller.groupby(['seller_state', 'customer_state'])['lama_pengiriman_hari'].mean().sort_values(ascending=False).reset_index()
+cmap = sns.cubehelix_palette(start=.5, rot=-.75, as_cmap=True)
+
+plt.scatter(df_pengiriman_state['seller_state'], df_pengiriman_state['customer_state'], c=df_pengiriman_state['lama_pengiriman_hari'], cmap=cmap, s=100)
+plt.xlabel('State Penjual')
+plt.ylabel('State Pembeli')
+
+plt.colorbar(label='Lama Pengiriman (Hari)')
+plt.show()
+
+#Pertanyaan 3: Berapa rata-rata payment value dari tiap tipe transaksi? dan transaksi tipe apa yang paling sering digunakan?¶
+
+df_payment = orders.groupby(by="payment_type")["payment_value"].mean().reset_index()
+plt.figure(figsize=(10, 5))
+
+colors = ["#800000", "#D3D3D3", "#D3D3D3", "#D3D3D3"]
+
+sns.barplot( 
+    x="payment_type",
+    y="payment_value",
+    data=df_payment.sort_values(by="payment_value", ascending = False),
+    palette=colors
+)
+plt.title("persebaran pembelian berdasarkan bagian hari", loc="center", fontsize=15)
+plt.ylabel("nilai transaksi")
+plt.xlabel(None)
+plt.tick_params(axis='x', labelsize=12)
+plt.show()
+
+df_payment = orders.groupby(by="payment_type")["order_id"].nunique().reset_index()
+palette_color = sns.color_palette('Reds') 
+
+plt.pie(df_payment["order_id"], labels=df_payment["payment_type"], colors=palette_color, autopct='%.0f%%')
+plt.title("Payment Type Distribution")
+
+#Pertanyaan 4: Bagaimana perbandingan penjualan tahun 2017 dan 2018?
+
+orders['nomor_bulan'] = orders['order_purchase_timestamp'].dt.strftime('%m')
+df_tanggal_penjualan = orders.groupby(by=["nomor_bulan","year"]).order_id.nunique().reset_index()
+df_tanggal_penjualan["nomor_bulan"] = df_tanggal_penjualan["nomor_bulan"].astype(str).astype(int)
+df_tanggal_penjualan = df_tanggal_penjualan[df_tanggal_penjualan["nomor_bulan"] < 9]
+
+month_names = {
+    1: 'Jan',
+    2: 'Feb',
+    3: 'Mar',
+    4: 'Apr',
+    5: 'Mei',
+    6: 'Jun',
+    7: 'Jul',
+    8: 'Aug'
 }
+df_tanggal_penjualan['nama_bulan'] = df_tanggal_penjualan['nomor_bulan'].map(month_names)
+custom_palette = ["#FFC0CB", "#800000"]  
+sns.catplot(x='nama_bulan', y='order_id', hue='year', data=df_tanggal_penjualan, kind='bar', height=6, aspect=2, palette = custom_palette)
+plt.ylabel("total order")
+plt.xlabel(None)
+
+#Pertanyaan 5: Bulan apa yang terjadi peningkatan penjualan tertinggi?
+df_tanggal =  orders.groupby(by=["month","year"]).order_id.nunique().reset_index()
+df_tanggal["month"] = pd.to_datetime(df_tanggal["month"], format='%m-%Y')
+
+plt.figure(figsize=(20, 6))
+
+ax = sns.lineplot(x='month', y='order_id', data=df_tanggal, estimator=None,linewidth=3)
+ax.set(xticks=df_tanggal.month.values)
+
+plt.title("Tren Pertumbuhan Penjualan", loc="center", fontsize=18)
+plt.ylabel("total order")
+plt.xlabel(None)
+ax.grid(False)
+for tick in ax.get_xticklabels():
+    tick.set_rotation(45)
+    
+    
+#Pertanyaan 6: hari apa yang sering digunakan oleh pembeli untuk melakukan transaksi?
+df_bagian_hari = orders.groupby(by="waktu_hari_pembelian")["order_id"].nunique().reset_index()
+df_bagian_hari.rename(columns={
+    "order_id": "total_orders"
+}, inplace=True)
+
+plt.figure(figsize=(10, 5))
+
+colors = ["#D3D3D3", "#D3D3D3", "#800000", "#D3D3D3"]
+
+sns.barplot( 
+    x="waktu_hari_pembelian",
+    y="total_orders",
+    data=df_bagian_hari.sort_values(by="total_orders"),
+    palette=colors
+)
+plt.title("persebaran pembelian berdasarkan bagian hari", loc="center", fontsize=15)
+plt.ylabel("total order")
+plt.xlabel(None)
+plt.tick_params(axis='x', labelsize=12)
+plt.show()
+
+df_hari = orders.groupby(by="hari_pembelian").order_id.nunique().sort_values(ascending=False).reset_index()
+df_hari.rename(columns={
+    "order_id": "total_orders"
+}, inplace=True)
+plt.figure(figsize=(10, 5))
+
+colors = ["#D3D3D3", "#D3D3D3","#D3D3D3", "#D3D3D3","#D3D3D3", "#D3D3D3", "#800000"]
+
+sns.barplot( 
+    x="hari_pembelian",
+    y="total_orders",
+    data=df_hari.sort_values(by="total_orders"),
+    palette=colors
+)
+plt.title("persebaran pembelian berdasarkan hari", loc="center", fontsize=15)
+plt.ylabel("total order")
+plt.xlabel(None)
+plt.tick_params(axis='x', labelsize=12)
+plt.show()
