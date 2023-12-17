@@ -5,31 +5,15 @@ import seaborn as sns
 import streamlit as st
 import os
 
-# Get the base directory of the current script
-base_dir = os.path.dirname(os.path.abspath(__file__))
-data_dir = os.path.join(base_dir, 'data')
-
-# Define variables for data file paths
-customer_file = 'customers_dataset.csv'
-orders_file = 'orders_dataset.csv'
-order_reviews_file = 'order_reviews_dataset.csv'
-payments_file = 'order_payments_dataset.csv'
-order_items_file = 'order_items_dataset.csv'
-products_file = 'products_dataset.csv'
-sellers_file = 'sellers_dataset.csv'
-geolocation_file = 'geolocation_dataset.csv'
-products_translation_file = 'product_category_name_translation.csv'
-
-# Read data files
-customer = pd.read_csv(os.path.join(data_dir, customer_file))
-orders = pd.read_csv(os.path.join(data_dir, orders_file))
-order_reviews = pd.read_csv(os.path.join(data_dir, order_reviews_file))
-payments = pd.read_csv(os.path.join(data_dir, payments_file))
-order_items = pd.read_csv(os.path.join(data_dir, order_items_file))
-products = pd.read_csv(os.path.join(data_dir, products_file))
-sellers = pd.read_csv(os.path.join(data_dir, sellers_file))
-geolocation = pd.read_csv(os.path.join(data_dir, geolocation_file))
-products_translation = pd.read_csv(os.path.join(data_dir, products_translation_file))
+customer = pd.read_csv('data/customers_dataset.csv')
+orders = pd.read_csv('data/orders_dataset.csv')
+order_reviews = pd.read_csv('data/order_reviews_dataset.csv')
+payments = pd.read_csv('data/order_payments_dataset.csv')
+order_items = pd.read_csv('data/order_items_dataset.csv')
+products = pd.read_csv('data/products_dataset.csv')
+sellers = pd.read_csv('data/sellers_dataset.csv')
+geolocation = pd.read_csv('data/geolocation_dataset.csv')
+products_translation = pd.read_csv('data/product_category_name_translation.csv')
 
 # menggabugkan product dengan products_translation
 products = products.merge(products_translation, left_on='product_category_name', right_on='product_category_name',how='left')
