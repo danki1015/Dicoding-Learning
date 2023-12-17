@@ -84,7 +84,7 @@ def range(series):
 st.text('Dashboard Proyek Analisa')
 
 #Pertanyaan 1
-st.subheader('Pertanyaan 1: Category barang yang paling banyak dibeli dan paling sedikit diminati?')
+st.subheader('Category barang yang paling banyak dibeli dan paling sedikit diminati?')
 
 df_category = df_order_items.groupby(by="product_category_name_english")["product_id"].count().reset_index() #jumlah pembelian
 df_category = df_category.rename(columns={"product_category_name_english": "category", "product_id": "orders"})
@@ -131,6 +131,7 @@ st.pyplot(fig)
 st.subheader('Berapa rata-rata payment value dari tiap tipe transaksi? dan transaksi tipe apa yang paling sering digunakan?')
 
 df_payment = orders.groupby(by="payment_type")["payment_value"].mean().reset_index()
+
 fig= plt.figure(figsize=(10, 5))
 
 colors = ["#800000", "#D3D3D3", "#D3D3D3", "#D3D3D3"]
@@ -145,7 +146,7 @@ plt.title("persebaran pembelian berdasarkan bagian hari", loc="center", fontsize
 plt.ylabel("nilai transaksi")
 plt.xlabel(None)
 plt.tick_params(axis='x', labelsize=12)
-plt.show()
+
 st.pyplot(fig)
 
 df_payment = orders.groupby(by="payment_type")["order_id"].nunique().reset_index()
@@ -173,7 +174,9 @@ month_names = {
     8: 'Aug'
 }
 df_tanggal_penjualan['nama_bulan'] = df_tanggal_penjualan['nomor_bulan'].map(month_names)
+
 fig = plt.figure(figsize=(20, 6))
+
 custom_palette = ["#FFC0CB", "#800000"]  
 sns.catplot(x='nama_bulan', y='order_id', hue='year', data=df_tanggal_penjualan, kind='bar', height=6, aspect=2, palette = custom_palette)
 plt.ylabel("total order")
