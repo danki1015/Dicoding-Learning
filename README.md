@@ -15,4 +15,4 @@ conda activate main-ds
 pip install numpy pandas scipy matplotlib seaborn jupyter streamlit
 
 #run
-streamlit run dashboard_dk.py
+streamlit run ./dashboard/dashboard_dk.py
